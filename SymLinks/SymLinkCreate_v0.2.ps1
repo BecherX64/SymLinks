@@ -44,10 +44,12 @@ Import-Module ActiveDirectory
 <# Define Output Log File #>
 #$Output = "..\Logs\SymLinksCreate_" + $date + "_" + $Time + ".txt"
 $Output = $OutPutFolder + "\SymLinksCreate_" + $date + ".txt"
+$OutputError = $OutPutFolder + "\SymLinksCreateErrors_" + $date + ".txt"
 
 Try {
-    "Started;" + $Date + " at " + $Time  | Add-Content $Output
+    #"Started;" + $Date + " at " + $Time  | Add-Content $Output
     "Action;Source;ActionStatus;Target" | Add-Content $Output
+	"Action;Source;ActionStatus;Target" | Add-Content $OutputError
     If (Test-Path $OutPut)
     {
         Write-Host "Output File OK:" $OutPut
@@ -55,9 +57,18 @@ Try {
         Write-Host "OutPut File NOK :" $OutPut
     }
 
+	If (Test-Path $OutPutError)
+    {
+        Write-Host "Output File OK:" $OutputError
+    } else {
+        Write-Host "OutPut File NOK :" $OutputError
+    }
+
+
+
 }
 Catch {
-    $_.Exception.Message
+    #$_.Exception.Message
     $Error.Clear()
 }
 
@@ -74,47 +85,59 @@ $SymLinkSourceStatus = $false
 $SymLinkTargetStatus = $false
 
 
-
-if (TestFolder -FolderToTest $SymLinkSource) {
+if ((!(TestFolder -FolderToTest $SymLinkSource).FullName.Length -eq 0)) {
     $SymLinkSourceStatus = $true
     #Write-Host "Sym Link Source OK:" $SymLinkSource
 }
 
-if (TestFolder -FolderToTest $SymLinkTarget ) {
+if ((!(TestFolder -FolderToTest $SymLinkTarget).FullName.Length -eq 0 )) {
     $SymLinkTargetStatus = $true
+	$ObjSymLinkTarget = TestFolder -FolderToTest $SymLinkTarget
     #Write-Host "Sym Link Store OK:" $SymLinkTarget
 } else {
     #Try to create Folder in Destination
     if (CreateFolder -FolderToCreate $SymLinkTarget)
     {
         $SymLinkTargetStatus = $true
+		$ObjSymLinkTarget = TestFolder -FolderToTest $SymLinkTarget
     }
 }
 
 #$ArchivedFileDate = $CurrentDate
 $FileList = Get-ChildItem -path $SymLinkSource -File | Where-Object {$_.LinkType -ne "SymbolicLink" -and $_.LastAccessTime -lt $ArchivedFileDate}
 
+
 if ((($FileList | Measure-Object).Count) -ne 0 -and $SymLinkSourceStatus -and $SymLinkTargetStatus) 
 {
     Foreach ($File in $FileList)
     {
        
-        Write-Host "Processing File:" $File.FullName " - LastAccessTime:" $File.LastAccessTime
+        #Write-Host "Processing File:" $File.FullName " - LastAccessTime:" $File.LastAccessTime
         $FileToTest = TestFile -SourcePath $File.FullName
         
+		if (!($FileToTest.Length -eq 0))
+		{
+			#$AfterMoveFileName = MoveFile -SourcePath $FileToTest -DestinationPath $SymLinkTarget
+			
+			$AfterMoveFileName = RoboFile -SourcePath $FileToTest -DestinationPath $ObjSymLinkTarget
 
-        $AfterMoveFileName = MoveFile -SourcePath $FileToTest -DestinationPath $SymLinkTarget
-        #Write-Host "AfterMoveFileName:" $AfterMoveFileName
-        if ($AfterMoveFileName) {
-            $SymLinkName = $FileToTest.Name+".lnk"
-            #Write-Host "SymLink Name:" $SymLinkName
-            $Link = CreateSymLinkToFile -SymLinkPath $FileToTest.Directory.FullName -SymLinkName $SymLinkName -SymLinkTarget $AfterMoveFileName
-            Write-Host "SymLinkCreated;"$FileToTest.FullName";OK;"$Link.FullName
-            #"LinkCreate;" + $FileToTest.FullName + ";OK;" + $Link.FullName | Add-Content $Output
-        } else {
-            Write-Host "SymLinkCreated;"$FileToTest.FullName";NOK;"
-            #"LinkCreate;" + $FileToTest.FullName + ";NOK;" | Add-Content $Output
-        }
+			#Write-Host "AfterMoveFileName:" $AfterMoveFileName
+
+			# CHECK 
+			# Check $AfterMoveFileName if file exist
+			if ($AfterMoveFileName) {
+				$SymLinkName = $FileToTest.Name+".lnk"
+				#Write-Host "SymLink Name:" $SymLinkName
+				$Link = CreateSymLinkToFile -SymLinkPath $FileToTest.Directory.FullName -SymLinkName $SymLinkName -SymLinkTarget $AfterMoveFileName
+				Write-Host "SymLinkCreated;"$FileToTest.FullName";OK;"$Link.FullName
+				#"LinkCreate;" + $FileToTest.FullName + ";OK;" + $Link.FullName | Add-Content $Output
+			} else {
+				Write-Host "SymLinkCreated;"$FileToTest.FullName";NOK;"
+				#"LinkCreate;" + $FileToTest.FullName + ";NOK;" | Add-Content $Output
+			}
+		} else {
+			#File NOT found
+		}
     }
 } else {
     if (($FileList | Measure-Object).Count -eq '0')
@@ -139,4 +162,4 @@ if ((($FileList | Measure-Object).Count) -ne 0 -and $SymLinkSourceStatus -and $S
 $Date = get-date -format yyyy-MM-dd
 $Time = get-date -format HH-mm
 
-"Finished;" + $Date + " at " + $Time  | Add-Content $Output
+#"Finished;" + $Date + " at " + $Time  | Add-Content $Output

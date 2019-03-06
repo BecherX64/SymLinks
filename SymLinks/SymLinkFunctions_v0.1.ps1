@@ -23,10 +23,10 @@ Function TestFile{
     Catch
     {
        #Write-host $SourcePath": File Not Found"
-       #"TestFile;" + $SourcePath + ";NOK;" | Add-Content $Output
+       "TestFile;" + $SourcePath + ";NOK;" | Add-Content $OutputError
        $_.Exception.Message | Add-content $Output
        $Error.Clear()
-       Return $false
+       Return ""
        break
     }
     Return ""
@@ -55,6 +55,7 @@ Param(
             #Write-host $SourcePath.FullName": Move NOK"
             "MoveFile;" + $SourcePath.FullName +";NOK;"+ $DestinationPath | Add-content $Output
             "MoveFileError;" + $SourcePath.FullName +";NOK;"+ $Error | Add-content $Output
+			"MoveFileError;" + $SourcePath.FullName +";NOK;"+ $Error | Add-content $OutputError
             $error.Clear()
         } else {
             #Write-Host "File:" $SourcePath.FullName " - LastAccessTime:" $SourcePath.LastAccessTime
@@ -66,13 +67,62 @@ Param(
     Catch 
     {             
         #Write-host $SourcePath.FullName": Move NOK"
-        "MoveFile;" + $SourcePath.FullName +";NOK;"+ $DestinationPath | Add-content $Output
-        $_.Exception.Message | Add-content $Output
+        "MoveFileError;" + $SourcePath.FullName +";NOK;"+ $DestinationPath | Add-content $Output
+		"MoveFileError;" + $SourcePath.FullName +";NOK;"+ $DestinationPath | Add-content $OutputError
+        $_.Exception.Message | Add-content $OutputError
         $Error.Clear()
         Return ""
         break
     }
 }
+
+Function RoboFile{
+Param(
+    [parameter(Mandatory=$true)]
+    $SourcePath,
+    [parameter(Mandatory=$true)]
+    $DestinationPath
+)
+    #Write-Host "MoveFile:" $SourcePath
+    Try 
+    {
+
+		$RoboComand = "Robocopy '"+$SourcePath.Directory.FullName+"' '"+$DestinationPath.FullName+"' '"+$SourcePath.Name+"' /MOV /R:0 /W:0 /SEC"
+		#$cmd = "robocopy '"+$fileObj.Directory.FullName+"' '"+$targetObj.Fullname+"' '"+$fileObj.name+"' /MOV /R:0 /W:0"
+
+		$RoboOutput = Invoke-Expression -Command $RoboComand
+		$RoboError = $LASTEXITCODE
+
+		Write-Host "RoboResults: " $RoboError
+        
+        if ($RoboError -eq 1) {
+            #Write-Host "File:" $SourcePath.FullName " - LastAccessTime:" $SourcePath.LastAccessTime
+            "MoveFile;" + $SourcePath.FullName + ";OK;" + $DestinationPath.FullName | Add-Content $Output
+            Write-host $SourcePath.FullName": Move OK"
+            Return $DestinationPath+"\"+$SourcePath.Name
+        } else {
+            #Write-host $SourcePath.FullName": Move NOK"
+            "MoveFile;" + $SourcePath.FullName +";NOK;"+ $DestinationPath.FullName | Add-content $Output
+			"MoveFile;" + $SourcePath.FullName +";NOK;"+ $DestinationPath.FullName | Add-content $OutputError
+            "MoveFileError;" + $SourcePath.FullName +";NOK;"+ $Error | Add-content $Output
+			"MoveFileError;" + $SourcePath.FullName +";NOK;"+ $Error | Add-content $OutputError
+			Return ""
+            $error.Clear()
+        }
+    }
+    Catch 
+    {             
+        #Write-host $SourcePath.FullName": Move NOK"
+        "MoveFileError;" + $SourcePath.FullName +";NOK;"+ $DestinationPath.FullName  | Add-content $Output
+		"MoveFileError;" + $SourcePath.FullName +";NOK;"+ $DestinationPath.FullName  | Add-content $OutputError
+        $_.Exception.Message | Add-content $OutputError
+        $Error.Clear()
+        Return ""
+        break
+    }
+}
+
+
 
 Function CreateSymLinkToFile{
 Param(
@@ -137,9 +187,9 @@ Function TestFolder{
     $item = Get-Item -Path $FolderToTest
     if ($item.Attributes -eq "Directory")
     {
-        return $item.FullName
+        return $item
     } else {
-        return $false
+        return ""
     }
 }
 
