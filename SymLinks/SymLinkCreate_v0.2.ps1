@@ -52,20 +52,17 @@ Try {
 	"Action;Source;ActionStatus;Target" | Add-Content $OutputError
     If (Test-Path $OutPut)
     {
-        Write-Host "Output File OK:" $OutPut
+        #Write-Host "Output File OK:" $OutPut
     } else {
-        Write-Host "OutPut File NOK :" $OutPut
+        #Write-Host "OutPut File NOK :" $OutPut
     }
 
 	If (Test-Path $OutPutError)
     {
-        Write-Host "Output File OK:" $OutputError
+        #Write-Host "Output File OK:" $OutputError
     } else {
-        Write-Host "OutPut File NOK :" $OutputError
+        #Write-Host "OutPut File NOK :" $OutputError
     }
-
-
-
 }
 Catch {
     #$_.Exception.Message
@@ -77,82 +74,76 @@ Catch {
 
 <# Script itself #>
 $ArchivedFileDate = $CurrentDate.AddMonths(-($ArchivedFileMonths))
-Write-Host "Archive Date:" $ArchivedFileDate
+#Write-Host "Archive Date:" $ArchivedFileDate
 
 
 #Test Source and Destination
-$SymLinkSourceStatus = $false
-$SymLinkTargetStatus = $false
+$ObjSymLinkSource = TestFolder -FolderToTest $SymLinkSource
+$ObjSymLinkTarget = TestFolder -FolderToTest $SymLinkTarget
 
-
-if ((!(TestFolder -FolderToTest $SymLinkSource).FullName.Length -eq 0)) {
+if (!($ObjSymLinkSource.FullName.Length -eq 0)) {
     $SymLinkSourceStatus = $true
     #Write-Host "Sym Link Source OK:" $SymLinkSource
 }
 
-if ((!(TestFolder -FolderToTest $SymLinkTarget).FullName.Length -eq 0 )) {
-    $SymLinkTargetStatus = $true
-	$ObjSymLinkTarget = TestFolder -FolderToTest $SymLinkTarget
-    #Write-Host "Sym Link Store OK:" $SymLinkTarget
+if (!($ObjSymLinkTarget.FullName.Length -eq 0 )) {
+	#RoboFolder
+	$ObjSymLinkTarget = RoboFolder -SourceFolder $ObjSymLinkSource.FullName -TargetFolder $ObjSymLinkTarget.Fullname
+
 } else {
-    #Try to create Folder in Destination
-    if (CreateFolder -FolderToCreate $SymLinkTarget)
-    {
-        $SymLinkTargetStatus = $true
-		$ObjSymLinkTarget = TestFolder -FolderToTest $SymLinkTarget
-    }
+    #RoboFolder
+	$ObjSymLinkTarget = RoboFolder -SourceFolder $ObjSymLinkSource.FullName -TargetFolder $SymLinkTarget
 }
 
 #$ArchivedFileDate = $CurrentDate
-$FileList = Get-ChildItem -path $SymLinkSource -File | Where-Object {$_.LinkType -ne "SymbolicLink" -and $_.LastAccessTime -lt $ArchivedFileDate}
+$FileList = Get-ChildItem -path $ObjSymLinkSource.FullName -File | Where-Object {$_.LinkType -ne "SymbolicLink" -and $_.LastAccessTime -lt $ArchivedFileDate}
 
 
-if ((($FileList | Measure-Object).Count) -ne 0 -and $SymLinkSourceStatus -and $SymLinkTargetStatus) 
+if ((($FileList | Measure-Object).Count) -ne 0 -and $ObjSymLinkTarget.FullName.Length -ne 0 -and $ObjSymLinkSource.FullName.Lenght -ne 0) 
 {
     Foreach ($File in $FileList)
     {
        
         #Write-Host "Processing File:" $File.FullName " - LastAccessTime:" $File.LastAccessTime
         $FileToTest = TestFile -SourcePath $File.FullName
-        
+        $AfterMoveFileName = ""
 		if (!($FileToTest.Length -eq 0))
 		{
-			#$AfterMoveFileName = MoveFile -SourcePath $FileToTest -DestinationPath $SymLinkTarget
-			
 			$AfterMoveFileName = RoboFile -SourcePath $FileToTest -DestinationPath $ObjSymLinkTarget
 
 			#Write-Host "AfterMoveFileName:" $AfterMoveFileName
 
-			# CHECK 
-			# Check $AfterMoveFileName if file exist
-			if ($AfterMoveFileName) {
+			$ObjAfterMoveFileName = ""
+			$ObjAfterMoveFileName = TestFile -SourcePath $AfterMoveFileName
+
+			if (!($ObjAfterMoveFileName.FullName.Length -eq 0)) {
 				$SymLinkName = $FileToTest.Name+".lnk"
 				#Write-Host "SymLink Name:" $SymLinkName
-				$Link = CreateSymLinkToFile -SymLinkPath $FileToTest.Directory.FullName -SymLinkName $SymLinkName -SymLinkTarget $AfterMoveFileName
-				Write-Host "SymLinkCreated;"$FileToTest.FullName";OK;"$Link.FullName
-				#"LinkCreate;" + $FileToTest.FullName + ";OK;" + $Link.FullName | Add-Content $Output
+				$Link = CreateSymLinkToFile -SymLinkPath $FileToTest.Directory.FullName -SymLinkName $SymLinkName -SymLinkTarget $ObjAfterMoveFileName.FullName
+				#Write-Host "SymLinkCreated;"$FileToTest.FullName";OK;"$Link.FullName				
 			} else {
-				Write-Host "SymLinkCreated;"$FileToTest.FullName";NOK;"
-				#"LinkCreate;" + $FileToTest.FullName + ";NOK;" | Add-Content $Output
+				#Write-Host "SymLinkError;"$FileToTest.FullName";NOK;"
+				"MoveFileError;" + $FileToTest.FullName + ";NOK-TargetFileNotFound;" | Add-Content $Output
 			}
 		} else {
 			#File NOT found
+			"SourceFileError;" + $File.FullName + ";NOK-SourceFileNotFound;" | Add-Content $OutputError
 		}
     }
 } else {
     if (($FileList | Measure-Object).Count -eq '0')
     {
-        Write-Host "No files to process at:" $SymLinkSource
+        #Write-Host "No files to process at:" $SymLinkSource
         "NoFiles;" + $SymLinkSource + ";NOK;" | Add-Content $Output
     }
     if (!$SymLinkSourceStatus)
     {
-        Write-Host "Sym Link Source NOK:" $SymLinkSource
+        #Write-Host "Sym Link Source NOK:" $SymLinkSource
         "SourceNOK;" + $SymLinkSource + ";NOK;" | Add-Content $Output
     }
     if (!$SymLinkTargetStatus)
     {
-        Write-Host "Sym Link Target NOK:" $SymLinkTarget
+        #Write-Host "Sym Link Target NOK:" $SymLinkTarget
         "TargetNOK;" + $SymLinkTarget + ";NOK;" | Add-Content $Output
     }
 }

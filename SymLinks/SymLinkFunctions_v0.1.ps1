@@ -23,7 +23,7 @@ Function TestFile{
     Catch
     {
        #Write-host $SourcePath": File Not Found"
-       "TestFile;" + $SourcePath + ";NOK;" | Add-Content $OutputError
+       "TestFile;" + $SourcePath + ";NOK-FileNotFound;" | Add-Content $OutputError
        $_.Exception.Message | Add-content $Output
        $Error.Clear()
        Return ""
@@ -97,24 +97,40 @@ Param(
         
         if ($RoboError -eq 1) {
             #Write-Host "File:" $SourcePath.FullName " - LastAccessTime:" $SourcePath.LastAccessTime
-            "MoveFile;" + $SourcePath.FullName + ";OK;" + $DestinationPath.FullName | Add-Content $Output
-            Write-host $SourcePath.FullName": Move OK"
+            "MoveFile;" + $SourcePath.FullName + ";OK-MoveSuccefull;" + $DestinationPath.FullName | Add-Content $Output
+            #Write-host $SourcePath.FullName": Move OK"
             Return $DestinationPath+"\"+$SourcePath.Name
         } else {
-            #Write-host $SourcePath.FullName": Move NOK"
-            "MoveFile;" + $SourcePath.FullName +";NOK;"+ $DestinationPath.FullName | Add-content $Output
-			"MoveFile;" + $SourcePath.FullName +";NOK;"+ $DestinationPath.FullName | Add-content $OutputError
-            "MoveFileError;" + $SourcePath.FullName +";NOK;"+ $Error | Add-content $Output
-			"MoveFileError;" + $SourcePath.FullName +";NOK;"+ $Error | Add-content $OutputError
-			Return ""
-            $error.Clear()
-        }
-    }
+			if ($RoboError -eq 8)
+			{
+				#Access Dennied
+				#Delete file in target
+				"MoveFileError;" + $SourcePath.FullName +";NOK-AccessDenied;"+ $RoboError | Add-content $Output
+				"MoveFileError;" + $SourcePath.FullName +";NOK-AccessDenied;"+ $RoboError | Add-content $OutputError
+				$ObjTargetFile = TestFile -SourcePath ($DestinationPath+"\"+$SourcePath.Name)
+				$ObjSourceFile = TestFile -SourcePath $SourcePath.FullName
+
+				If (!($ObjTargetFile.FullName.Length -eq 0) -and !($ObjSourceFile.FullName.Lentgh -eq 0))
+				{
+					#Write-Host $ObjTargetFile.FullName ": Move NOK - Access Denied"
+					DeleteItem -ItemToDelete $ObjTargetFile.FullName
+				}
+			} else {
+				#Write-host $SourcePath.FullName": Move NOK"
+				"MoveFileInfo;" + $SourcePath.FullName +";NOK-CheckError;"+ $DestinationPath.FullName | Add-content $Output
+				"MoveFileInfo;" + $SourcePath.FullName +";NOK-CheckError;"+ $DestinationPath.FullName | Add-content $OutputError
+				"MoveFileError;" + $SourcePath.FullName +";NOK-CheckError;"+ $RoboError | Add-content $Output
+				"MoveFileError;" + $SourcePath.FullName +";NOK-CheckError;"+ $RoboError | Add-content $OutputError
+				Return ""
+				$error.Clear()
+			}
+		}
+	}
     Catch 
     {             
         #Write-host $SourcePath.FullName": Move NOK"
-        "MoveFileError;" + $SourcePath.FullName +";NOK;"+ $DestinationPath.FullName  | Add-content $Output
-		"MoveFileError;" + $SourcePath.FullName +";NOK;"+ $DestinationPath.FullName  | Add-content $OutputError
+        "MoveFileError;" + $SourcePath.FullName +";NOK-CheckException;"+ $DestinationPath.FullName  | Add-content $Output
+		"MoveFileError;" + $SourcePath.FullName +";NOK-CheckException;"+ $DestinationPath.FullName  | Add-content $OutputError
         $_.Exception.Message | Add-content $OutputError
         $Error.Clear()
         Return ""
@@ -138,14 +154,15 @@ Param(
     try {
         $link = New-Item -ItemType SymbolicLink -Path $SymLinkPath -Name $SymLinkName -Value $SymLinkTarget -Force
         #Write-Host $SymLinkName": SymLink OK"
-        "LinkCreated;" + $SymLinkName + ";OK;" + $SymLinkTarget | Add-Content $Output
+        "SymLink;" + $SymLinkName + ";OK-Created;" + $SymLinkTarget | Add-Content $Output
         Return $link
     }
     catch {
         
         #Write-Host $SymLinkName": SymLink NOK"
-        "LinkCreated;" + $SymLinkName + ";NOK;" + $SymLinkTarget | Add-Content $Output
-        $_.Exception.Message | Add-content $Output
+        "SymLinkError;" + $SymLinkName + ";NOK-CheckException;" + $SymLinkTarget | Add-Content $Output
+		"SymLinkError;" + $SymLinkName + ";NOK-CheckException;" + $SymLinkTarget | Add-Content $OutputError
+        $_.Exception.Message | Add-content $OutputError
         $Error.Clear()
         Return ""
         break
@@ -168,7 +185,7 @@ Function DeleteItem{
     catch {
         
         #Write-Host $SymLinkPath": Deleted NOK"
-        "DeleteItem;" + $ItemToDelete + ";NOK" | Add-Content $Output
+        "DeleteItem;" + $ItemToDelete + ";NOK-CheckException" | Add-Content $Output
         $_.Exception.Message | Add-content $Output
         $Error.Clear()
         Return $false
@@ -213,5 +230,58 @@ Function CreateFolder{
         $_.Exception.Message | Add-content $Output
         $Error.Clear()
         Return $false
+    }
+}
+
+Function RoboFolder{
+    Param(
+        
+        [Parameter(Mandatory=$true)]
+        $SourceFolder,
+		[Parameter(Mandatory=$true)]
+        $TargetFolder
+    )
+    try 
+    {
+        #Robo Folder
+		#$cmd = "robocopy '"+$ObjSource.FullName+"' '"+$ObjTarget.Fullname+"' /xf * /CopyAll /lev:0 /zb"
+		$RoboComand = "Robocopy '"+$SourceFolder+"' '"+$TargetFolder+"' /xf * /CopyAll /Lev:0 /ZB"
+		$RoboOutput = Invoke-Expression -Command $RoboComand
+		$RoboError = $LASTEXITCODE
+		if ($RoboError -eq 1)
+		{
+			#OK
+			"DestinationFolder;" + $TargetFolder + ";OK-Created" | Add-Content $Output
+			Return TestFolder -FolderToTest $TargetFolder
+		} Else {
+			If ($RoboError -eq 0)
+			{
+				#Exiting folder - check 
+				"DestinationFolder;" + $TargetFolder + ";OK-Security" | Add-Content $Output
+				Return TestFolder -FolderToTest $TargetFolder
+			} Else {
+				If ($RoboError -eq 8)
+				{
+					#Access Denied
+					"DestinationFolderError;" + $FolderToCreate + ";NOK-AccessDenied" | Add-Content $Output
+					"DestinationFolderError;" + $FolderToCreate + ";NOK-AccessDenied" | Add-Content $OutputError
+					Return ""
+				} Else {
+					#NOK
+					"DestinationFolderError;" + $FolderToCreate + ";NOK-CheckError" | Add-Content $Output
+					"DestinationFolderError;" + $FolderToCreate + ";NOK-CheckError" | Add-Content $OutputError
+					Return ""
+				}
+			}
+		}
+
+    }
+    catch {
+        #Write-Host "Create Destination Folder: "$FolderToCreate "OK"
+        "DestinationFolder;" + $targetFolder + ";NOK-CheckException" | Add-Content $Output
+		"DestinationFolder;" + $targetFolder + ";NOK-CheckException" | Add-Content $OutputError
+        $_.Exception.Message | Add-content $OutputError
+        $Error.Clear()
+        Return ""
     }
 }
