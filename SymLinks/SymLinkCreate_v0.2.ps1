@@ -109,6 +109,11 @@ if ((($FileList | Measure-Object).Count) -ne 0 -and $ObjSymLinkTarget.FullName.L
         $AfterMoveFileName = ""
 		if (!($FileToTest.Length -eq 0))
 		{
+			
+			#MoveFile
+			#$AfterMoveFileName = MoveFile -SourcePath $FileToTest -DestinationPath $SymLinkTarget
+
+			#RoboFile
 			$AfterMoveFileName = RoboFile -SourcePath $FileToTest -DestinationPath $ObjSymLinkTarget
 
 			#Write-Host "AfterMoveFileName:" $AfterMoveFileName

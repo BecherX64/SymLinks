@@ -37,15 +37,26 @@ Import-Module ActiveDirectory
 <# Define Output Log File #>
 #$Output = "..\Logs\SymLinksRevert_" + $date + "_" + $Time + ".txt"
 $Output = $OutPutFolder + "\SymLinksRevert_" + $date + ".txt"
+$OutputError = $OutPutFolder + "\SymLinksRevertErrors_" + $date + ".txt"
+
 Try {
-    "Started;" + $Date + " at " + $Time  | Add-Content $Output
+    #"Started;" + $Date + " at " + $Time  | Add-Content $Output
     "Action;Source;ActionStatus;Target" | Add-Content $Output
+	"Action;Source;ActionStatus;Target" | Add-Content $OutputError
     If (Test-Path $OutPut)
     {
-        Write-Host "Output File OK:" $OutPut
+        #Write-Host "Output File OK:" $OutPut
     } else {
-        Write-Host "OutPut File NOK :" $OutPut
+        #Write-Host "OutPut File NOK :" $OutPut
     }
+
+	    If (Test-Path $OutputError)
+    {
+        #Write-Host "Output File OK:" $OutPutError
+    } else {
+        #Write-Host "OutPut File NOK :" $OutPutError
+    }
+
 
 }
 Catch {
@@ -62,31 +73,39 @@ Catch {
 # ALIGN WITH CUSTOMER REQUIRMENTS IN PROD
 $ArchivedFileDate = $CurrentDate.AddDays(-($ArchivedFileDays))
 
-Write-Host "ArchivedDate:" $ArchivedFileDate
+#Write-Host "ArchivedDate:" $ArchivedFileDate
 $SymLinkList = Get-ChildItem -path $SymLinkSource -File | Where-Object {$_.LinkType -eq "SymbolicLink"}
 
+$ObjSymLinkSource = TestFolder -FolderToTest $SymLinkSource
 
-if ((($SymLinkList | Measure-Object).Count) -ne '0') 
-{
-    
+if ((($SymLinkList | Measure-Object).Count) -ne '0' -and $ObjSymLinkSource.FullName.Length -ne 0) 
+{ 
     Foreach ($Link in $SymLinkList)
     {
-
-        Write-Host "Processing Link" $Link.FullName
+        #Write-Host "Processing Link" $Link.FullName
         $LinkTarget = TestFile -SourcePath $Link.Target.Replace("UNC","\")
         if ($LinkTarget.LastWriteTime -gt $ArchivedFileDate) 
         {
-            #Write-Host "OK:" $LinkTarget " - " $LinkTarget.LastWriteTime
-            $AfterMoveFileName = MoveFile -SourcePath $LinkTarget -DestinationPath $SymLinkSource
-            if ($AfterMoveFileName) {
+
+			#MoveFile
+            #$AfterMoveFileName = MoveFile -SourcePath $LinkTarget -DestinationPath $SymLinkSource
+			
+			#Robo
+			$AfterMoveFileName = RoboFile -SourcePath $LinkTarget -DestinationPath $ObjSymLinkSource
+
+			$ObjAfterMoveFileName = ""
+			$ObjAfterMoveFileName = TestFile -SourcePath $AfterMoveFileName
+
+            if (!($ObjAfterMoveFileName.FullName.Length -eq 0)) {
                 if (DeleteItem -ItemToDelete $Link.FullName) 
                 {
-                    Write-Host "LinkRevert;"$Link.FullName";OK;"$AfterMoveFileName
-                    "LinkRevert;" + $Link.FullName + ";OK;" + $AfterMoveFileName | Add-Content $Output
+                    #Write-Host "LinkRevert;"$Link.FullName";OK;"$AfterMoveFileName
+                    "LinkRevert;" + $Link.FullName + ";OK-RevertDone;" + $ObjAfterMoveFileName.FullName | Add-Content $Output
                 } 
             } else {
-                Write-Host "LinkRevert;"$Link.FullName";NOK"
-                "LinkRevert;" + $Link.FullName + ";NOK" | Add-Content $Output
+                #Write-Host "LinkRevert;"$Link.FullName";NOK"
+                "LinkRevert;" + $Link.FullName + ";NOK-CheckErrors" | Add-Content $Output
+				"LinkRevert;" + $Link.FullName + ";NOK-CheckErrors" | Add-Content $OutputError
             }
         } else {
             #Write-Host "NOK:" $LinkTarget " - " $LinkTarget.LastWriteTime
