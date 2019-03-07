@@ -24,10 +24,9 @@ Function TestFile{
     {
        #Write-host $SourcePath": File Not Found"
        "TestFile;" + $SourcePath + ";NOK-FileNotFound;" | Add-Content $OutputError
-       $_.Exception.Message | Add-content $Output
+       $_.Exception.Message | Add-content $OutputError
        $Error.Clear()
        Return ""
-       break
     }
     Return ""
     }
@@ -72,7 +71,6 @@ Param(
         $_.Exception.Message | Add-content $OutputError
         $Error.Clear()
         Return ""
-        break
     }
 }
 
@@ -87,54 +85,76 @@ Param(
     Try 
     {
 
-		$RoboComand = "Robocopy '"+$SourcePath.Directory.FullName+"' '"+$DestinationPath.FullName+"' '"+$SourcePath.Name+"' /MOV /R:0 /W:0 /SEC"
-		#$cmd = "robocopy '"+$fileObj.Directory.FullName+"' '"+$targetObj.Fullname+"' '"+$fileObj.name+"' /MOV /R:0 /W:0"
+		#$RoboComand = "Robocopy '"+$SourcePath.Directory.FullName+"' '"+$DestinationPath.FullName+"' '"+$SourcePath.Name+"' /MOV /R:0 /W:0 /COPY:DATS /secfix /ZB"
 
+		$RoboComand = "Robocopy '"+$SourcePath.Directory.FullName+"' '"+$DestinationPath.FullName+"' '"+$SourcePath.Name+`
+		"' /MOV /R:0 /W:0 /COPY:DATS /secfix /ZB /NP /Log+:"+$RoboFileLog
+		#$cmd = "robocopy '"+$fileObj.Directory.FullName+"' '"+$targetObj.Fullname+"' '"+$fileObj.name+"' /MOV /R:0 /W:0"
+		
 		$RoboOutput = Invoke-Expression -Command $RoboComand
 		$RoboError = $LASTEXITCODE
-
-		Write-Host "RoboResults: " $RoboError
-        
+		
+        #Copy OK
         if ($RoboError -eq 1) {
             #Write-Host "File:" $SourcePath.FullName " - LastAccessTime:" $SourcePath.LastAccessTime
             "MoveFile;" + $SourcePath.FullName + ";OK-MoveSuccefull;" + $DestinationPath.FullName | Add-Content $Output
             #Write-host $SourcePath.FullName": Move OK"
-            Return $DestinationPath+"\"+$SourcePath.Name
+            
+			$Return = $DestinationPath.FullName+"\"+$SourcePath.Name
+			#"Return;" + $Return | Add-Content $Output
+			Return $Return
         } else {
-			if ($RoboError -eq 8)
+			#No Change
+			if ($RoboError -eq 0)
 			{
-				#Access Dennied
-				#Delete file in target
-				"MoveFileError;" + $SourcePath.FullName +";NOK-AccessDenied;"+ $RoboError | Add-content $Output
-				"MoveFileError;" + $SourcePath.FullName +";NOK-AccessDenied;"+ $RoboError | Add-content $OutputError
-				$ObjTargetFile = TestFile -SourcePath ($DestinationPath+"\"+$SourcePath.Name)
-				$ObjSourceFile = TestFile -SourcePath $SourcePath.FullName
-
-				If (!($ObjTargetFile.FullName.Length -eq 0) -and !($ObjSourceFile.FullName.Lentgh -eq 0))
+				"MoveFileNoChange;" + $SourcePath.FullName +";NOK-NoChange;"+ $RoboError | Add-content $Output
+				"MoveFileNoChange;" + $SourcePath.FullName +";NOK-NoChange;"+ $RoboError | Add-content $OutputError
+				#$Return = $DestinationPath.FullName+"\"+$SourcePath.Name
+				if ((TestFile -SourcePath $SourcePath.FullName).FullName.Length -ne 0 `
+					-and (TestFile -SourcePath ($DestinationPath.FullName+"\"+$SourcePath.Name)).FullName.Length -ne 0)
 				{
-					#Write-Host $ObjTargetFile.FullName ": Move NOK - Access Denied"
-					DeleteItem -ItemToDelete $ObjTargetFile.FullName
+					#delete target file
+					"ExtraFile;" + $DestinationPath.FullName+"\"+$SourcePath.Name + ";TobeDeleted" | Add-Content $Output
+					DeleteItem -ItemToDelete ($DestinationPath.FullName+"\"+$SourcePath.Name)
 				}
-			} else {
-				#Write-host $SourcePath.FullName": Move NOK"
-				"MoveFileInfo;" + $SourcePath.FullName +";NOK-CheckError;"+ $DestinationPath.FullName | Add-content $Output
-				"MoveFileInfo;" + $SourcePath.FullName +";NOK-CheckError;"+ $DestinationPath.FullName | Add-content $OutputError
-				"MoveFileError;" + $SourcePath.FullName +";NOK-CheckError;"+ $RoboError | Add-content $Output
-				"MoveFileError;" + $SourcePath.FullName +";NOK-CheckError;"+ $RoboError | Add-content $OutputError
 				Return ""
-				$error.Clear()
+			} else {
+				#Combination CopyOK + Exta + Mismatch
+				If ($RoboError -gt 1 -and $RoboError -lt 8)
+				{
+					"MoveFileCombo;" + $SourcePath.FullName +";NOK-Combo;"+ $DestinationPath.FullName | Add-content $Output
+					"MoveFileCombo;" + $SourcePath.FullName +";NOK-Combo;"+ $DestinationPath.FullName | Add-content $OutputError
+					"MoveFileRoboInfo;" + $SourcePath.FullName +";NOK-RoboInfo;"+ $RoboError | Add-content $Output
+					"MoveFileRoboInfo;" + $SourcePath.FullName +";NOK-RoboInfo;"+ $RoboError | Add-content $OutputError
+					#Return $DestinationPath.FullName+"\"+$SourcePath.Name
+
+					if ((TestFile -SourcePath $SourcePath.FullName).FullName.Length -ne 0 `
+						-and (TestFile -SourcePath ($DestinationPath.FullName+"\"+$SourcePath.Name)).FullName.Length -ne 0)
+					{
+						#delete target file
+						"ExtraFile;" + $DestinationPath.FullName+"\"+$SourcePath.Name + ";TobeDeleted" | Add-Content $Output
+						DeleteItem -ItemToDelete ($DestinationPath.FullName+"\"+$SourcePath.Name)
+					}
+					Return ""
+				} Else {
+					#ERROR
+					"MoveFileError;" + $SourcePath.FullName +";NOK-Error;"+ $DestinationPath.FullName | Add-content $Output
+					"MoveFileError;" + $SourcePath.FullName +";NOK-Error;"+ $DestinationPath.FullName | Add-content $OutputError
+					"MoveFileRoboError;" + $SourcePath.FullName +";NOK-RoboError;"+ $RoboError | Add-content $Output
+					"MoveFileRoboError;" + $SourcePath.FullName +";NOK-RoboError;"+ $RoboError | Add-content $OutputError				
+					Return ""
+				}
 			}
 		}
 	}
     Catch 
     {             
         #Write-host $SourcePath.FullName": Move NOK"
-        "MoveFileError;" + $SourcePath.FullName +";NOK-CheckException;"+ $DestinationPath.FullName  | Add-content $Output
-		"MoveFileError;" + $SourcePath.FullName +";NOK-CheckException;"+ $DestinationPath.FullName  | Add-content $OutputError
+        "MoveFileErrorCatch;" + $SourcePath.FullName +";NOK-CheckException;"+ $DestinationPath.FullName  | Add-content $Output
+		"MoveFileErrorCatch;" + $SourcePath.FullName +";NOK-CheckException;"+ $DestinationPath.FullName  | Add-content $OutputError
         $_.Exception.Message | Add-content $OutputError
         $Error.Clear()
         Return ""
-        break
     }
 }
 
@@ -165,7 +185,6 @@ Param(
         $_.Exception.Message | Add-content $OutputError
         $Error.Clear()
         Return ""
-        break
     }
 
 }
@@ -189,7 +208,6 @@ Function DeleteItem{
         $_.Exception.Message | Add-content $Output
         $Error.Clear()
         Return $false
-        break
     }
 
 }
@@ -245,31 +263,36 @@ Function RoboFolder{
     {
         #Robo Folder
 		#$cmd = "robocopy '"+$ObjSource.FullName+"' '"+$ObjTarget.Fullname+"' /xf * /CopyAll /lev:0 /zb"
-		$RoboComand = "Robocopy '"+$SourceFolder+"' '"+$TargetFolder+"' /xf * /CopyAll /Lev:0 /ZB"
+		#$RoboComand = "Robocopy '"+$SourceFolder+"' '"+$TargetFolder+"' /xf * /COPY:DATS /secfix /Lev:0 /ZB /R:0 /W:0"
+		
+		$RoboComand = "Robocopy '"+$SourceFolder+"' '"+$TargetFolder+`
+		"' /xf * /COPY:DATS /secfix /Lev:0 /ZB /R:0 /W:0 /NP /Log+:"+$RoboDirLog
+		
 		$RoboOutput = Invoke-Expression -Command $RoboComand
 		$RoboError = $LASTEXITCODE
+		#$RoboErrorText = GetRoboErrorLevel -RoboLastExitCode $RoboError
 		if ($RoboError -eq 1)
 		{
-			#OK
-			"DestinationFolder;" + $TargetFolder + ";OK-Created" | Add-Content $Output
+			#Copy OK
+			"DestinationFolder;" + $TargetFolder + ";OK-Created;" + $RoboError | Add-Content $Output
 			Return TestFolder -FolderToTest $TargetFolder
 		} Else {
 			If ($RoboError -eq 0)
 			{
-				#Exiting folder - check 
-				"DestinationFolder;" + $TargetFolder + ";OK-Security" | Add-Content $Output
+				#No change
+				"DestinationFolderNoChange;" + $TargetFolder + ";OK-AccessDeniedOrSkipped;" + $RoboError | Add-Content $Output
 				Return TestFolder -FolderToTest $TargetFolder
 			} Else {
-				If ($RoboError -eq 8)
+				#Combination CopyOK + Exta + Mismatch
+				If ($RoboError -gt 1 -and $RoboError -lt 8)
 				{
-					#Access Denied
-					"DestinationFolderError;" + $FolderToCreate + ";NOK-AccessDenied" | Add-Content $Output
-					"DestinationFolderError;" + $FolderToCreate + ";NOK-AccessDenied" | Add-Content $OutputError
-					Return ""
+					
+					"DestinationFolderCombo;" + $FolderToCreate + ";OK-Combo;" + $RoboError | Add-Content $Output
+					Return TestFolder -FolderToTest $TargetFolder
 				} Else {
-					#NOK
-					"DestinationFolderError;" + $FolderToCreate + ";NOK-CheckError" | Add-Content $Output
-					"DestinationFolderError;" + $FolderToCreate + ";NOK-CheckError" | Add-Content $OutputError
+					#Error
+					"DestinationFolderError;" + $FolderToCreate + ";NOK-CheckError;" + $RoboError | Add-Content $Output
+					"DestinationFolderError;" + $FolderToCreate + ";NOK-CheckError;" + $RoboError | Add-Content $OutputError
 					Return ""
 				}
 			}
@@ -284,4 +307,31 @@ Function RoboFolder{
         $Error.Clear()
         Return ""
     }
+}
+
+Function GetRoboErrorLevel {
+Param(
+        
+        [Parameter(Mandatory=$true)]
+        $RoboLastExitCode
+    )
+
+	switch($RoboLastExitCode) {
+		0 {Return "NoChange"; break} 
+		1 {Return "CopyOK"; break}
+		2 {Return "Extra";break}
+		4 {Return "Mismathces";break}
+		5 {Return "CopyOK and Mismatches"; break}
+		6 {Return "Extra and Mismatches"; break}
+		7 {Return "CopyOK and Mismatches"; break}
+		8 {Return "Fail"; break}
+		9 {Return "CopyOK and Fail"; break}
+		10 {Return "Extra and Fail"; break}
+		11 {Retun "CopyOK and Extra and Fail"; break}
+		12 {Return "Fail and Mismatches"; break}
+		13 {Return "CopyOK and Fail and Mismatches"; break}
+		14 {Return "Fail and Mismatches and Extra"; break}
+		15 {Return "CopyOK and Fail and Mismatches"; break}
+		16 {Return "FatalError"; break}
+	}
 }

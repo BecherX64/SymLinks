@@ -38,6 +38,8 @@ Import-Module ActiveDirectory
 #$Output = "..\Logs\SymLinksRevert_" + $date + "_" + $Time + ".txt"
 $Output = $OutPutFolder + "\SymLinksRevert_" + $date + ".txt"
 $OutputError = $OutPutFolder + "\SymLinksRevertErrors_" + $date + ".txt"
+$RoboDirLog = $OutPutFolder + "\SymLinksRevertRoboDir_" + $date + ".txt"
+$RoboFileLog = $OutPutFolder + "\SymLinksRevertRoboFile_" + $date + ".txt"
 
 Try {
     #"Started;" + $Date + " at " + $Time  | Add-Content $Output
@@ -134,4 +136,4 @@ if ((($SymLinkList | Measure-Object).Count) -ne '0' -and $ObjSymLinkSource.FullN
 $Date = get-date -format yyyy-MM-dd
 $Time = get-date -format HH-mm
 
-"Finished;" + $Date + " at " + $Time  | Add-Content $Output
+#"Finished;" + $Date + " at " + $Time  | Add-Content $Output

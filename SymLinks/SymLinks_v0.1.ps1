@@ -24,7 +24,6 @@ Function TestFile{
        $_.Exception.Message | Add-content $Output
        Write-host $SourcePath": File Not Found"
        Return $false
-       break
     }
     Return ""
     }
@@ -51,7 +50,6 @@ Param(
         Write-host $SourcePath.FullName": Move NOK"
         "Move;" + $SourcePath.FullName +";NOK" | Add-content $Output
         Return ""
-        break
     }
 }
 
@@ -78,7 +76,6 @@ Param(
         Write-Host $SymLinkName": SymLink NOK"
         "SymLink;" + $SymLinkName + ";NOK;" + $SymLinkTarget | Add-Content $Output
         Return ""
-        break
     }
 
 }

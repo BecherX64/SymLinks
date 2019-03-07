@@ -45,6 +45,8 @@ Import-Module ActiveDirectory
 #$Output = "..\Logs\SymLinksCreate_" + $date + "_" + $Time + ".txt"
 $Output = $OutPutFolder + "\SymLinksCreate_" + $date + ".txt"
 $OutputError = $OutPutFolder + "\SymLinksCreateErrors_" + $date + ".txt"
+$RoboDirLog = $OutPutFolder + "\SymLinksCreateRoboDir_" + $date + ".txt"
+$RoboFileLog = $OutPutFolder + "\SymLinksCreateRoboFile_" + $date + ".txt"
 
 Try {
     #"Started;" + $Date + " at " + $Time  | Add-Content $Output
@@ -114,33 +116,47 @@ if ((($FileList | Measure-Object).Count) -ne 0 -and $ObjSymLinkTarget.FullName.L
 			#$AfterMoveFileName = MoveFile -SourcePath $FileToTest -DestinationPath $SymLinkTarget
 
 			#RoboFile
+			#"RoboFile: start" | Add-Content $OutPut
 			$AfterMoveFileName = RoboFile -SourcePath $FileToTest -DestinationPath $ObjSymLinkTarget
 
 			#Write-Host "AfterMoveFileName:" $AfterMoveFileName
+			#"RoboFile: Done - AfterMoveFileName:" + $AfterMoveFileName | Add-Content $Output
+			if (!($AfterMoveFileName.Length -eq 0))
+			{
+				$ObjAfterMoveFileName = ""
+				$ObjAfterMoveFileName = TestFile -SourcePath $AfterMoveFileName
 
-			$ObjAfterMoveFileName = ""
-			$ObjAfterMoveFileName = TestFile -SourcePath $AfterMoveFileName
-
-			if (!($ObjAfterMoveFileName.FullName.Length -eq 0)) {
-				$SymLinkName = $FileToTest.Name+".lnk"
-				#Write-Host "SymLink Name:" $SymLinkName
-				$Link = CreateSymLinkToFile -SymLinkPath $FileToTest.Directory.FullName -SymLinkName $SymLinkName -SymLinkTarget $ObjAfterMoveFileName.FullName
-				#Write-Host "SymLinkCreated;"$FileToTest.FullName";OK;"$Link.FullName				
-			} else {
-				#Write-Host "SymLinkError;"$FileToTest.FullName";NOK;"
-				"MoveFileError;" + $FileToTest.FullName + ";NOK-TargetFileNotFound;" | Add-Content $Output
+				if (!($ObjAfterMoveFileName.FullName.Length -eq 0)) {
+					$SymLinkName = $FileToTest.Name+".lnk"
+					#"SymLink Name:" + $SymLinkName | Add-Content $OutPut
+					$Link = CreateSymLinkToFile -SymLinkPath $FileToTest.Directory.FullName -SymLinkName $SymLinkName -SymLinkTarget $ObjAfterMoveFileName.FullName
+					#Write-Host "SymLinkCreated;"$FileToTest.FullName";OK;"$Link.FullName				
+				} else {
+					#Write-Host "SymLinkError;"$FileToTest.FullName";NOK;"
+					"TargetFileError;" + $FileToTest.FullName + ";NOK-TargetFileNotFound;" | Add-Content $Output
+				}
+			} Else {
+				#AfterMoveFileName Empty
 			}
 		} else {
-			#File NOT found
-			"SourceFileError;" + $File.FullName + ";NOK-SourceFileNotFound;" | Add-Content $OutputError
+			#File NOT found or ZERO Lenght
+			If ($File.Lenght -eq 0)
+			{
+				#ZERO Lenght
+				"SourceFileEmpty;" + $File.FullName + ";NOK-SourceFileSkipped;" | Add-Content $OutputError
+			} Else {
+				"SourceFileError;" + $File.FullName + ";NOK-SourceFileNotFound;" | Add-Content $OutputError
+			}
 		}
     }
 } else {
     if (($FileList | Measure-Object).Count -eq '0')
     {
         #Write-Host "No files to process at:" $SymLinkSource
-        "NoFiles;" + $SymLinkSource + ";NOK;" | Add-Content $Output
+        "NoFiles;" + $SymLinkSource + ";OK-NoFilesInSource;" | Add-Content $Output
     }
+	#Not required
+	<#
     if (!$SymLinkSourceStatus)
     {
         #Write-Host "Sym Link Source NOK:" $SymLinkSource
@@ -151,6 +167,7 @@ if ((($FileList | Measure-Object).Count) -ne 0 -and $ObjSymLinkTarget.FullName.L
         #Write-Host "Sym Link Target NOK:" $SymLinkTarget
         "TargetNOK;" + $SymLinkTarget + ";NOK;" | Add-Content $Output
     }
+	#>
 }
 
 <# End of Script itself #>

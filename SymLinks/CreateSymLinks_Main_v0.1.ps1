@@ -78,7 +78,7 @@ catch {
 
 ForEach ($Share in $ShareConfig)
 {
-    write-host $share.Share ":" $Share.Source "->" $Share.Target
+    #write-host $share.Share ":" $Share.Source "->" $Share.Target
     $SourceFolderRoot = Get-Item $Share.Source
     $FolderList = Get-ChildItem -Path $share.Source -Directory -Recurse
     
@@ -87,7 +87,7 @@ ForEach ($Share in $ShareConfig)
         " -SymLinkTarget " + '"' + $Share.Target + '"' + `
         " -ArchivedFileMonths " + '"' + $MoveFileToSymLinkStoreMonths + '"' + `
         " -OutPutFolder " + '"' + $SymLinkCreateLogFolder + '"'
-    Invoke-Expression ".\SymLinkCreate_v0.2.ps1 $ScriptParams"
+		Invoke-Expression ".\SymLinkCreate_v0.2.ps1 $ScriptParams"
 
     #Sub Folders Processing
     ForEach ($SourceFolder in $FolderList)
