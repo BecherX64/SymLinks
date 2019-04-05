@@ -35,11 +35,18 @@ Import-Module ActiveDirectory
 <#End of Custom Variables #>
 
 <# Define Output Log File #>
-#$Output = "..\Logs\SymLinksRevert_" + $date + "_" + $Time + ".txt"
+<# Old way
 $Output = $OutPutFolder + "\SymLinksRevert_" + $date + ".txt"
 $OutputError = $OutPutFolder + "\SymLinksRevertErrors_" + $date + ".txt"
 $RoboDirLog = $OutPutFolder + "\SymLinksRevertRoboDir_" + $date + ".txt"
 $RoboFileLog = $OutPutFolder + "\SymLinksRevertRoboFile_" + $date + ".txt"
+#>
+
+#New way how to name OutPut logs - Date first
+$Output = $OutPutFolder + "\" + $date + "_SymLinksRevert.txt"
+$OutputError = $OutPutFolder + "\" + $date + "_SymLinksRevertErrors.txt"
+$RoboDirLog = $OutPutFolder + "\" + $date + "_SymLinksRevertRoboDir.txt"
+$RoboFileLog = $OutPutFolder + "\" + $date + "_SymLinksRevertRoboFile.txt"
 
 Try {
     #"Started;" + $Date + " at " + $Time  | Add-Content $Output

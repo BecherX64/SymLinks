@@ -33,6 +33,9 @@
     <Compile Include="SymLinkWriteBack_v0.1.ps1" />
     <Compile Include="WriteDataBackFromSymLink_Main_v0.1.ps1" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="SymLink-LogsHouseKeeping_v0.1.ps1" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="Build" />
 </Project>

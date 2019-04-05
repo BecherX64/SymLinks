@@ -42,11 +42,19 @@ Import-Module ActiveDirectory
 <#End of Custom Variables #>
 
 <# Define Output Log File #>
-#$Output = "..\Logs\SymLinksCreate_" + $date + "_" + $Time + ".txt"
+<# Old way
 $Output = $OutPutFolder + "\SymLinksCreate_" + $date + ".txt"
 $OutputError = $OutPutFolder + "\SymLinksCreateErrors_" + $date + ".txt"
 $RoboDirLog = $OutPutFolder + "\SymLinksCreateRoboDir_" + $date + ".txt"
 $RoboFileLog = $OutPutFolder + "\SymLinksCreateRoboFile_" + $date + ".txt"
+#>
+
+#New way how to name OutPut logs - Date first
+$Output = $OutPutFolder + "\"+ $date + "_SymLinksCreate.txt"
+$OutputError = $OutPutFolder + "\" + $date + "_SymLinksCreateErrors.txt"
+$RoboDirLog = $OutPutFolder + "\" + $date + "_SymLinksCreateRoboDir.txt"
+$RoboFileLog = $OutPutFolder + "\" + $date + "_SymLinksCreateRoboFile.txt"
+
 
 Try {
     #"Started;" + $Date + " at " + $Time  | Add-Content $Output
@@ -76,7 +84,8 @@ Catch {
 
 <# Script itself #>
 $ArchivedFileDate = $CurrentDate.AddMonths(-($ArchivedFileMonths))
-#Write-Host "Archive Date:" $ArchivedFileDate
+#Comment for test
+#"Archive Date;" + $ArchivedFileDate | Add-Content $OutPut
 
 
 #Test Source and Destination
@@ -100,9 +109,13 @@ if (!($ObjSymLinkTarget.FullName.Length -eq 0 )) {
 #$ArchivedFileDate = $CurrentDate
 $FileList = Get-ChildItem -path $ObjSymLinkSource.FullName -File | Where-Object {$_.LinkType -ne "SymbolicLink" -and $_.LastAccessTime -lt $ArchivedFileDate}
 
+#Testing output
+"Initial;" + $ObjSymLinkSource.FullName + ";"+ ($FileList | Measure-Object).Count + ";" + $ObjSymLinkTarget.FullName + ";" + $ArchivedFileDate | Add-Content $OutPut
 
-if ((($FileList | Measure-Object).Count) -ne 0 -and $ObjSymLinkTarget.FullName.Length -ne 0 -and $ObjSymLinkSource.FullName.Lenght -ne 0) 
+if ((($FileList | Measure-Object).Count) -ne 0 -and $ObjSymLinkTarget.FullName.Length -ne 0 -and $ObjSymLinkSource.FullName.Length -ne 0) 
 {
+	#Comment for test
+	
     Foreach ($File in $FileList)
     {
        
@@ -139,7 +152,7 @@ if ((($FileList | Measure-Object).Count) -ne 0 -and $ObjSymLinkTarget.FullName.L
 				#AfterMoveFileName Empty
 			}
 		} else {
-			#File NOT found or ZERO Lenght
+			#File NOT found or ZERO Length
 			If ($File.Lenght -eq 0)
 			{
 				#ZERO Lenght
@@ -149,25 +162,21 @@ if ((($FileList | Measure-Object).Count) -ne 0 -and $ObjSymLinkTarget.FullName.L
 			}
 		}
     }
+	
+	#End of test comment
+	
+	#Testing
+	#"InputPath;" + $ObjSymLinkSource.FullName + ";OK-Files;"+ ($FileList | Measure-Object).Count + ";" + $ObjSymLinkTarget.FullName | Add-Content $OutPut
+
 } else {
-    if (($FileList | Measure-Object).Count -eq '0')
+    if (($FileList | Measure-Object).Count -eq 0)
     {
         #Write-Host "No files to process at:" $SymLinkSource
-        "NoFiles;" + $SymLinkSource + ";OK-NoFilesInSource;" | Add-Content $Output
-    }
-	#Not required
-	<#
-    if (!$SymLinkSourceStatus)
-    {
-        #Write-Host "Sym Link Source NOK:" $SymLinkSource
-        "SourceNOK;" + $SymLinkSource + ";NOK;" | Add-Content $Output
-    }
-    if (!$SymLinkTargetStatus)
-    {
-        #Write-Host "Sym Link Target NOK:" $SymLinkTarget
-        "TargetNOK;" + $SymLinkTarget + ";NOK;" | Add-Content $Output
-    }
-	#>
+        "NoFiles;" + $ObjSymLinkSource.FullName + ";OK-NoFilesInSource;" + $ObjSymLinkTarget.FullName | Add-Content $Output
+    } Else {
+		"UnknownStatus;" + $ObjSymLinkSource.FullName + ";" + ($FileList | Measure-Object).Count  + ";" + $ObjSymLinkTarget.FullName | Add-Content $OutPut
+	}
+	
 }
 
 <# End of Script itself #>

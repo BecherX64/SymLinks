@@ -97,7 +97,7 @@ Param(
         #Copy OK
         if ($RoboError -eq 1) {
             #Write-Host "File:" $SourcePath.FullName " - LastAccessTime:" $SourcePath.LastAccessTime
-            "MoveFile;" + $SourcePath.FullName + ";OK-MoveSuccefull;" + $DestinationPath.FullName | Add-Content $Output
+            "MoveFile;" + $SourcePath.FullName + ";OK-MoveSuccefull;" + $DestinationPath.FullName + ";" + $RoboError| Add-Content $Output
             #Write-host $SourcePath.FullName": Move OK"
             
 			$Return = $DestinationPath.FullName+"\"+$SourcePath.Name
@@ -107,8 +107,8 @@ Param(
 			#No Change
 			if ($RoboError -eq 0)
 			{
-				"MoveFileNoChange;" + $SourcePath.FullName +";NOK-NoChange;"+ $RoboError | Add-content $Output
-				"MoveFileNoChange;" + $SourcePath.FullName +";NOK-NoChange;"+ $RoboError | Add-content $OutputError
+				"MoveFileNoChange;" + $SourcePath.FullName +";NOK-NoChange;" + $DestinationPath.FullName + ";" + $RoboError | Add-content $Output
+				"MoveFileNoChange;" + $SourcePath.FullName +";NOK-NoChange;" + $DestinationPath.FullName + ";" + $RoboError | Add-content $OutputError
 				#$Return = $DestinationPath.FullName+"\"+$SourcePath.Name
 				if ((TestFile -SourcePath $SourcePath.FullName).FullName.Length -ne 0 `
 					-and (TestFile -SourcePath ($DestinationPath.FullName+"\"+$SourcePath.Name)).FullName.Length -ne 0)
@@ -122,10 +122,10 @@ Param(
 				#Combination CopyOK + Exta + Mismatch
 				If ($RoboError -gt 1 -and $RoboError -lt 8)
 				{
-					"MoveFileCombo;" + $SourcePath.FullName +";NOK-Combo;"+ $DestinationPath.FullName | Add-content $Output
-					"MoveFileCombo;" + $SourcePath.FullName +";NOK-Combo;"+ $DestinationPath.FullName | Add-content $OutputError
-					"MoveFileRoboInfo;" + $SourcePath.FullName +";NOK-RoboInfo;"+ $RoboError | Add-content $Output
-					"MoveFileRoboInfo;" + $SourcePath.FullName +";NOK-RoboInfo;"+ $RoboError | Add-content $OutputError
+					"MoveFileCombo;" + $SourcePath.FullName +";NOK-Combo;" + $DestinationPath.FullName + ";" + $RoboError | Add-content $Output
+					"MoveFileCombo;" + $SourcePath.FullName +";NOK-Combo;" + $DestinationPath.FullName + ";" + $RoboError | Add-content $OutputError
+					"MoveFileRoboInfo;" + $SourcePath.FullName +";NOK-RoboInfo;" + $DestinationPath.FullName + ";" + $RoboError | Add-content $Output
+					"MoveFileRoboInfo;" + $SourcePath.FullName +";NOK-RoboInfo;" + $DestinationPath.FullName + ";" + $RoboError | Add-content $OutputError
 					#Return $DestinationPath.FullName+"\"+$SourcePath.Name
 
 					if ((TestFile -SourcePath $SourcePath.FullName).FullName.Length -ne 0 `
@@ -138,10 +138,10 @@ Param(
 					Return ""
 				} Else {
 					#ERROR
-					"MoveFileError;" + $SourcePath.FullName +";NOK-Error;"+ $DestinationPath.FullName | Add-content $Output
-					"MoveFileError;" + $SourcePath.FullName +";NOK-Error;"+ $DestinationPath.FullName | Add-content $OutputError
-					"MoveFileRoboError;" + $SourcePath.FullName +";NOK-RoboError;"+ $RoboError | Add-content $Output
-					"MoveFileRoboError;" + $SourcePath.FullName +";NOK-RoboError;"+ $RoboError | Add-content $OutputError				
+					"MoveFileError;" + $SourcePath.FullName +";NOK-Error;" + $DestinationPath.FullName + ";" + $RoboError | Add-content $Output
+					"MoveFileError;" + $SourcePath.FullName +";NOK-Error;" + $DestinationPath.FullName + ";" + $RoboError | Add-content $OutputError
+					"MoveFileRoboError;" + $SourcePath.FullName + ";NOK-RoboError;" + $DestinationPath.FullName + ";" + $RoboError | Add-content $Output
+					"MoveFileRoboError;" + $SourcePath.FullName + ";NOK-RoboError;" + $DestinationPath.FullName + ";" + $RoboError | Add-content $OutputError				
 					Return ""
 				}
 			}
