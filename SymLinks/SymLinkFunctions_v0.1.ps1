@@ -287,12 +287,12 @@ Function RoboFolder{
 				If ($RoboError -gt 1 -and $RoboError -lt 8)
 				{
 					
-					"DestinationFolderCombo;" + $FolderToCreate + ";OK-Combo;" + $RoboError | Add-Content $Output
+					"DestinationFolderCombo;" + $TargetFolder + ";OK-Combo;" + $RoboError | Add-Content $Output
 					Return TestFolder -FolderToTest $TargetFolder
 				} Else {
 					#Error
-					"DestinationFolderError;" + $FolderToCreate + ";NOK-CheckError;" + $RoboError | Add-Content $Output
-					"DestinationFolderError;" + $FolderToCreate + ";NOK-CheckError;" + $RoboError | Add-Content $OutputError
+					"DestinationFolderError;" + $TargetFolder + ";NOK-CheckError;" + $RoboError | Add-Content $Output
+					"DestinationFolderError;" + $TargetFolder + ";NOK-CheckError;" + $RoboError | Add-Content $OutputError
 					Return ""
 				}
 			}
@@ -301,8 +301,8 @@ Function RoboFolder{
     }
     catch {
         #Write-Host "Create Destination Folder: "$FolderToCreate "OK"
-        "DestinationFolder;" + $targetFolder + ";NOK-CheckException" | Add-Content $Output
-		"DestinationFolder;" + $targetFolder + ";NOK-CheckException" | Add-Content $OutputError
+        "DestinationFolder;" + $TargetFolder + ";NOK-CheckException" | Add-Content $Output
+		"DestinationFolder;" + $TargetFolder + ";NOK-CheckException" | Add-Content $OutputError
         $_.Exception.Message | Add-content $OutputError
         $Error.Clear()
         Return ""

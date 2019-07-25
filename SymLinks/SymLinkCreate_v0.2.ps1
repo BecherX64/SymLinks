@@ -58,8 +58,12 @@ $RoboFileLog = $OutPutFolder + "\" + $date + "_SymLinksCreateRoboFile.txt"
 
 Try {
     #"Started;" + $Date + " at " + $Time  | Add-Content $Output
-    "Action;Source;ActionStatus;Target" | Add-Content $Output
-	"Action;Source;ActionStatus;Target" | Add-Content $OutputError
+	
+	#Header Row
+    
+	#"Action;Source;ActionStatus;Target" | Add-Content $Output
+	#"Action;Source;ActionStatus;Target" | Add-Content $OutputError
+
     If (Test-Path $OutPut)
     {
         #Write-Host "Output File OK:" $OutPut
