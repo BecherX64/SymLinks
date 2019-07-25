@@ -29,7 +29,6 @@
     <Compile Include="CreateSymLinks_Main_v0.1.ps1" />
     <Compile Include="SymLinkCreate_v0.2.ps1" />
     <Compile Include="SymLinkFunctions_v0.1.ps1" />
-    <Compile Include="SymLinks_v0.1.ps1" />
     <Compile Include="SymLinkWriteBack_v0.1.ps1" />
     <Compile Include="WriteDataBackFromSymLink_Main_v0.1.ps1" />
   </ItemGroup>

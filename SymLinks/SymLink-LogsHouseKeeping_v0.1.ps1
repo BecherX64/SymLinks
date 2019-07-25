@@ -82,12 +82,12 @@ $ListLogsFromMonth = (Get-Date).Date.AddMonths($Months).Date.Month
 $ListLogsFromYear = (Get-Date).Date.AddMonths($Months).Date.Year
 $DateForOutputFileName = (Get-Date).AddMonths($Months).toString("yyyy-MM")
 #Logs and Zip output files
-$Output = $PathToLogFiles + "\"+ $DateForOutputFileName + "_LogsHouseKeeping.log"
+$Output = $PathToLogFiles + "\"+ $DateForOutputFileName + "_LogsHouseKeeping.txt"
 $ZipFileOut = $PathToLogFiles + "\"+ $DateForOutputFileName + "_ArchivedLogs.zip"
 
 
 #Get list of file to be processed by script
-$ObjLogFilesToRemove = Get-ChildItem -Path $PathToLogFiles *.log | `
+$ObjLogFilesToRemove = Get-ChildItem -Path $PathToLogFiles *.txt | `
 where  {!$_.PSIsContainer -and $_.CreationTime.Date.Year -eq $ListLogsFromYear -and $_.CreationTime.Date.Month -eq $ListLogsFromMonth}
 
 #Add header into HouseKeeping log file
